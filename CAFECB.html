@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAFE C&B - Full Game Experience</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+        body {
+            font-family: 'Fredoka', cursive, sans-serif;
+            background: #1a0d07;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        #game-frame {
+            width: 100%;
+            max-width: 900px;
+            background: #3e2316;
+            border: 6px solid #8b5a2b;
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            position: relative;
+            overflow: hidden;
+            min-height: 580px;
+        }
+
+        /* CARTOON BUTTONS */
+        .cartoon-btn {
+            background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
+            color: white; border: none; padding: 12px 20px; border-radius: 14px;
+            font-family: 'Fredoka', sans-serif; font-size: 15px; font-weight: 600;
+            cursor: pointer; box-shadow: 0 5px 0 #962d00; transition: all 0.1s;
+        }
+        .cartoon-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #962d00; }
+
+        /* 1. ANA MENÜ EKRANI */
+        #main-menu-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 550px;
+            background: radial-gradient(circle, #5a361a 0%, #26140b 100%);
+            border-radius: 18px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .logo {
+            font-size: 52px;
+            color: #f39c12;
+            text-shadow: 4px 4px 0px #8e44ad, 8px 8px 0px #000;
+            margin-bottom: 10px;
+        }
+
+        .menu-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 240px;
+            margin-top: 25px;
+        }
+
+        /* 2. OYUN EKRANI */
+        #game-screen { display: none; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #26140b;
+            padding: 10px 15px;
+            border-radius: 16px;
+            border: 2px solid #5a361a;
+            margin-bottom: 12px;
+        }
+
+        .stat-badge {
+            background: #4a2b16;
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 2px solid #f39c12;
+            font-size: 14px;
+            color: #ffeb3b;
+        }
+
+        #viewport {
+            position: relative;
+            width: 100%;
+            height: 330px;
+            background: linear-gradient(180deg, #d3a373 0%, #b88252 60%, #8c582f 100%);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 4px solid #5a361a;
+        }
+
+        /* OYUN İÇİ CAFE C&B TABELASI */
+        .cafe-sign {
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            background: #4a2912;
+            border: 2px solid #f39c12;
+            border-radius: 10px;
+            padding: 4px 14px;
+            color: #f39c12;
+            font-size: 15px;
+            font-weight: 700;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            letter-spacing: 0.5px;
+            z-index: 5;
+        }
+
+        .shelf { position: absolute; top: 45px; left: 40px; right: 40px; height: 12px; background: #5c3818; border-radius: 6px; }
+
+        #customer-container {
+            position: absolute;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.2);
+            opacity: 0;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #customer-container.active { transform: translateX(-50%) scale(1); opacity: 1; }
+
+        .speech-bubble {
+            background: #fff; color: #2c3e50; padding: 8px 16px; border-radius: 18px;
+            font-size: 14px; font-weight: 700; border: 3px solid #f39c12; margin-bottom: 8px;
+        }
+
+        #counter {
+            position: absolute; bottom: 0; width: 100%; height: 120px;
+            background: linear-gradient(180deg, #794622 0%, #4a2912 100%);
+            border-top: 6px solid #a06336; display: flex;
+            justify-content: space-between; align-items: flex-end; padding: 0 40px 10px 40px;
+        }
+
+        .cup-wrapper {
+            position: relative; width: 60px; height: 80px; background: #fff;
+            border-radius: 6px 6px 25px 25px; border: 4px solid #dcdde1; overflow: hidden;
+            display: flex; align-items: flex-end;
+        }
+
+        .liquid { width: 100%; height: 0%; background: #6f4e37; transition: height 0.4s; }
+
+        #controls { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 10px; }
+        .control-panel { background: #26140b; border-radius: 14px; padding: 10px; border: 2px solid #5a361a; }
+        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+        .action-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 8px; background: #1a0d07; padding: 6px 10px; border-radius: 10px;
+        }
+
+        /* POP-UP MODALS */
+        .modal-bg {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); display: flex;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+
+        #upgrade-modal { z-index: 110; }
+
+        .modal-card {
+            background: #3e2316; border: 4px solid #f39c12;
+            border-radius: 20px; padding: 22px; text-align: center;
+            width: 420px; max-height: 85vh; overflow-y: auto;
+        }
+
+        .link-box {
+            background: #26140b; border: 2px solid #5a361a; border-radius: 12px;
+            padding: 12px; margin-top: 12px; text-align: left;
+        }
+
+        .link-input {
+            width: 100%; background: #1a0d07; color: #2ecc71; border: 1px solid #5a361a;
+            padding: 8px; border-radius: 8px; font-family: monospace; font-size: 12px; margin-top: 6px;
+        }
+
+        .recipe-card, .upgrade-card {
+            background: #26140b; border: 2px solid #5a361a;
+            border-radius: 10px; padding: 10px; margin-bottom: 8px;
+            text-align: left; display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .inspiration-box {
+            background: #4a2b16; border: 2px dashed #f39c12; border-radius: 12px;
+            padding: 10px; margin-top: 12px; font-size: 13px; color: #ffeb3b;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="game-frame">
+
+    <!-- 1. ANA MENÜ EKRANI -->
+    <div id="main-menu-screen">
+        <div style="font-size: 60px;">☕</div>
+        <h1 class="logo">CAFE C&B</h1>
+        <p style="color:#d3a373;">Kendi Butik Kafeni İşletmeye Hazır Mısın?</p>
+        
+        <div class="menu-btn-group">
+            <button class="cartoon-btn" onclick="enterGame()" style="font-size: 18px; padding: 14px;">▶️ Oyuna Başla</button>
+            <button class="cartoon-btn" onclick="openGuideModal()" style="background: linear-gradient(180deg, #3498db, #2980b9); box-shadow: 0 5px 0 #1c5980;">💡 Oyunu Anla</button>
+            <button class="cartoon-btn" onclick="openRecipeBook()" style="background: linear-gradient(180deg, #9b59b6, #8e44ad); box-shadow: 0 5px 0 #5e2d73;">📖 Tarifler</button>
+        </div>
+    </div>
+
+    <!-- 2. OYUN EKRANI -->
+    <div id="game-screen">
+        <header>
+            <div class="stat-badge">📅 Gün: <span id="ui-day">1</span></div>
+            <div class="stat-badge">💰 Kasa: <span id="ui-money">150</span> ₺</div>
+            <div class="stat-badge">❤️ %<span id="ui-rep">100</span></div>
+            <div class="stat-badge">⏰ <span id="ui-time">08:00</span></div>
+            <button class="cartoon-btn" onclick="openRecipeBook()" style="padding: 6px 12px; font-size:12px; background: linear-gradient(180deg, #9b59b6, #8e44ad); box-shadow: 0 3px 0 #5e2d73;">📖 Tarifler</button>
+            <button class="cartoon-btn" onclick="exitToMainMenu()" style="padding: 6px 12px; font-size:12px; background: linear-gradient(180deg, #e74c3c, #c0392b); box-shadow: 0 3px 0 #801e15;">🏠 Menü</button>
+        </header>
+
+        <div id="viewport">
+            <!-- CAFE LOGO TABELASI -->
+            <div class="cafe-sign">☕ CAFE C&B</div>
+
+            <div class="shelf"></div>
+            <div id="customer-container">
+                <div class="speech-bubble" id="customer-bubble">Sipariş Bekleniyor...</div>
+                <svg id="customer-svg" width="120" height="150" viewBox="0 0 140 180">
+                    <path id="svg-body" d="M 20 180 Q 20 100 70 100 Q 120 100 120 180 Z" fill="#e74c3c" />
+                    <circle cx="70" cy="70" r="40" fill="#ffdbac" />
+                    <circle cx="55" cy="65" r="5" fill="#2c3e50" />
+                    <circle cx="85" cy="65" r="5" fill="#2c3e50" />
+                    <path d="M 60 85 Q 70 95 80 85" stroke="#c0392b" stroke-width="4" fill="none" stroke-linecap="round" />
+                    <path id="svg-hair" d="M 30 60 Q 70 20 110 60 Q 70 40 30 60" fill="#f1c40f" />
+                </svg>
+            </div>
+            <div id="counter">
+                <div style="font-size: 35px;">🫖</div>
+                <div class="cup-wrapper">
+                    <div class="liquid" id="cup-liquid"></div>
+                </div>
+                <div style="font-size: 38px;">☕</div>
+            </div>
+        </div>
+
+        <div id="controls">
+            <div class="control-panel">
+                <div class="btn-grid">
+                    <button class="cartoon-btn" onclick="addIngredient('Kahve')">🟤 Kahve</button>
+                    <button class="cartoon-btn" onclick="addIngredient('Su')">💧 Su</button>
+                    <button class="cartoon-btn" onclick="addIngredient('Süt')">🥛 Süt</button>
+                    <button class="cartoon-btn" onclick="addIngredient('Köpük')">☁️ Köpük</button>
+                    <button class="cartoon-btn" onclick="addIngredient('Karamel')">🍯 Karamel</button>
+                    <button class="cartoon-btn" onclick="addIngredient('Buz')">🧊 Buz</button>
+                </div>
+                <div class="action-bar">
+                    <span>İçerik: <b id="recipe-list" style="color:#f39c12;">Boş</b></span>
+                    <div>
+                        <button class="cartoon-btn" onclick="serveCoffee()" style="padding:8px 12px; font-size:12px; background:linear-gradient(180deg, #2ecc71, #27ae60); box-shadow: 0 3px 0 #1e8449;">✅ Servis</button>
+                        <button class="cartoon-btn" onclick="resetRecipe()" style="padding:8px 12px; font-size:12px; background:linear-gradient(180deg, #e74c3c, #c0392b); box-shadow: 0 3px 0 #922b21;">🗑️ Dök</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <button class="cartoon-btn" id="btn-start" onclick="startShift()" style="width:100%; padding:14px; font-size:16px;">▶️ Mesaiyi Başlat</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 💡 OYUNU ANLA MODALI -->
+<div id="guide-modal" class="modal-bg hidden">
+    <div class="modal-card">
+        <h2 style="color:#f39c12; margin-bottom:12px;">💡 Oyunu Anla (Nasıl Oynanır?)</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #f3e5ab; text-align: justify; background: #26140b; padding: 12px; border-radius: 10px; border: 1px solid #5a361a;">
+            <b>CAFE C&B</b> oyununda amacın, baristanın gözünden kafene gelen müşterilere istedikleri kahveleri doğru tariflerle hazırlamak, memnuniyet seviyeni yüksek tutarak günlük dükkan kirasını ödemek ve kazandığın paralarla kafeni geliştirmektir. "▶️ Mesaiyi Başlat" butonuna bastığında gün başlar ve dükkanına sırayla müşteriler gelerek sipariş verir; tezgâhtaki butonları kullanarak bardağı doğru malzemelerle doldurup "✅ Servis Et" butonuna basarak satış yapabilir, "📖 Tarifler" menüsünden kahve karışımlarını inceleyebilir ve gün sonunda kazandığın kârla yeni makineler satın alarak menünü genişletebilirsin.
+        </p>
+        
+        <div class="inspiration-box">
+            🍕 <b>İlham Notu:</b> Bu oyun hazırlanırken sevilen restoran simülasyonu <b>"İyi Pizza, Güzel Pizza" (Good Pizza, Great Pizza)</b> mekaniklerinden ve sıcak atmosferinden ilham alınmıştır!
+        </div>
+
+        <div class="link-box">
+            <div style="font-size:13px; color:#f39c12; font-weight:bold;">🔗 Geliştirme Sohbeti Bağlantısı:</div>
+            <p style="font-size:11px; color:#ccc; margin-top:3px;">Gemini ile bu oyunu geliştirdiğimiz sohbetin bağlantısı:</p>
+            <input type="text" id="chat-link-input" class="link-input" value="https://share.gemini.google/FHEa9NP73mai" readonly />
+            <div style="display:flex; gap:6px; margin-top:8px;">
+                <button class="cartoon-btn" onclick="copyChatLink()" style="flex:1; padding:8px; font-size:12px; background:linear-gradient(180deg, #27ae60, #2ecc71);">📋 Linki Kopyala</button>
+                <button class="cartoon-btn" onclick="openChatLink()" style="flex:1; padding:8px; font-size:12px; background:linear-gradient(180deg, #3498db, #2980b9);">🌐 Sohbeti Aç</button>
+            </div>
+        </div>
+
+        <button class="cartoon-btn" onclick="closeGuideModal()" style="width:100%; margin-top:15px; padding:10px;">Anladım, Kapat 👍</button>
+    </div>
+</div>
+
+<!-- 📖 TARİF MENÜSÜ MODALI -->
+<div id="recipe-modal" class="modal-bg hidden">
+    <div class="modal-card">
+        <h2 style="color:#f39c12; margin-bottom:15px;">📖 Kahve Tarifleri</h2>
+        <div class="recipe-card"><div>☕</div><div><h4>Espresso (30 ₺)</h4><p>Kahve</p></div></div>
+        <div class="recipe-card"><div>🥛</div><div><h4>Americano (45 ₺)</h4><p>Kahve + Su</p></div></div>
+        <div class="recipe-card"><div>☕</div><div><h4>Sütlü Kahve (50 ₺)</h4><p>Kahve + Süt</p></div></div>
+        <div class="recipe-card"><div>☁️</div><div><h4>Latte (65 ₺) <small id="latte-status" style="color:#e74c3c;">(🔒 Kilitli)</small></h4><p>Kahve + Süt + Köpük</p></div></div>
+        <div class="recipe-card"><div>🍯</div><div><h4>Karamel Macchiato (80 ₺) <small id="caramel-status" style="color:#e74c3c;">(🔒 Kilitli)</small></h4><p>Kahve + Süt + Karamel</p></div></div>
+        <button class="cartoon-btn" onclick="closeRecipeBook()" style="width:100%; margin-top:10px;">Kapat ❌</button>
+    </div>
+</div>
+
+<!-- 🏪 GELİŞTİRME / SHOP MODALI -->
+<div id="upgrade-modal" class="modal-bg hidden">
+    <div class="modal-card">
+        <h2 style="color:#f39c12; margin-bottom:15px;">🏪 Kafe Geliştirmeleri</h2>
+        <div class="upgrade-card">
+            <div style="text-align:left;">
+                <h4 style="color:#ffeb3b;">Espresso Makinesi</h4>
+                <p style="font-size:12px; color:#ccc;">Latte & Macchiato açar</p>
+            </div>
+            <button class="cartoon-btn" id="btn-buy-espresso" onclick="buyUpgrade('espresso')" style="padding:6px 12px; font-size:12px;">200 ₺</button>
+        </div>
+        <button class="cartoon-btn" onclick="closeUpgradeModal()" style="width:100%; margin-top:15px; padding:10px; background:linear-gradient(180deg, #2ecc71, #27ae60);">Tamam 👍</button>
+    </div>
+</div>
+
+<!-- 📊 GÜN SONU MODALI -->
+<div id="summary-modal" class="modal-bg hidden">
+    <div class="modal-card">
+        <h2 style="color:#f39c12; margin-bottom:10px;">📊 Gün Bitti!</h2>
+        <p>Günün Kazancı: <b id="sum-income">0</b> ₺</p>
+        <p>Kira Gideri: <b id="sum-rent">30</b> ₺</p>
+        <h3 style="color:#2ecc71; margin:10px 0 20px 0;">Net Kâr: <span id="sum-profit">0</span> ₺</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button class="cartoon-btn" onclick="openUpgradeModal()" style="background: linear-gradient(180deg, #9b59b6, #8e44ad); box-shadow: 0 4px 0 #5e2d73;">🏪 Geliştirme Menüsü</button>
+            <button class="cartoon-btn" onclick="closeSummary()" style="background: linear-gradient(180deg, #2ecc71, #27ae60); box-shadow: 0 4px 0 #1e8449;">➡️ Sonraki Güne Geç</button>
+            <button class="cartoon-btn" onclick="exitFromSummaryToMenu()" style="background: linear-gradient(180deg, #e74c3c, #c0392b); box-shadow: 0 4px 0 #801e15;">🏠 Ana Menüye Dön</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let game = { day: 1, money: 150, reputation: 100, hour: 8, active: false, income: 0, hasEspresso: false };
+
+const RECIPES = {
+    "Espresso": ["Kahve"],
+    "Americano": ["Kahve", "Su"],
+    "Sütlü Kahve": ["Kahve", "Süt"],
+    "Latte": ["Kahve", "Süt", "Köpük"],
+    "Karamel Macchiato": ["Kahve", "Süt", "Karamel"]
+};
+
+let currentRecipe = [];
+let activeCustomer = null;
+let shiftInterval = null;
+
+// SOHBET LİNKİ FONKSİYONLARI
+function copyChatLink() {
+    const linkInput = document.getElementById('chat-link-input');
+    linkInput.select();
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+        alert("Sohbet bağlantısı başarıyla kopyalandı! 🔗");
+    });
+}
+
+function openChatLink() {
+    const url = document.getElementById('chat-link-input').value;
+    window.open(url, '_blank');
+}
+
+// EKRAN GEÇİŞLERİ
+function enterGame() {
+    document.getElementById('main-menu-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    updateUI();
+}
+
+function exitToMainMenu() {
+    if(shiftInterval) clearInterval(shiftInterval);
+    game.active = false;
+    clearCustomer();
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('main-menu-screen').style.display = 'flex';
+}
+
+function exitFromSummaryToMenu() {
+    document.getElementById('summary-modal').classList.add('hidden');
+    exitToMainMenu();
+}
+
+function openGuideModal() { document.getElementById('guide-modal').classList.remove('hidden'); }
+function closeGuideModal() { document.getElementById('guide-modal').classList.add('hidden'); }
+
+function openRecipeBook() {
+    if (game.hasEspresso) {
+        document.getElementById('latte-status').innerText = "(Açık ✅)";
+        document.getElementById('latte-status').style.color = "#2ecc71";
+        document.getElementById('caramel-status').innerText = "(Açık ✅)";
+        document.getElementById('caramel-status').style.color = "#2ecc71";
+    }
+    document.getElementById('recipe-modal').classList.remove('hidden');
+}
+function closeRecipeBook() { document.getElementById('recipe-modal').classList.add('hidden'); }
+
+function openUpgradeModal() {
+    if(game.hasEspresso) {
+        const btn = document.getElementById('btn-buy-espresso');
+        btn.innerText = "Alındı ✅";
+        btn.disabled = true;
+    }
+    document.getElementById('upgrade-modal').classList.remove('hidden');
+}
+
+function closeUpgradeModal() { document.getElementById('upgrade-modal').classList.add('hidden'); }
+
+class CartoonCustomer {
+    constructor() {
+        this.shirtColors = ['#e74c3c', '#3498db', '#9b59b6', '#1abc9c', '#e67e22'];
+        this.hairColors = ['#f1c40f', '#e67e22', '#2c3e50', '#7f8c8d'];
+        let menu = ["Espresso", "Americano", "Sütlü Kahve"];
+        if(game.hasEspresso) menu.push("Latte", "Karamel Macchiato");
+        
+        this.order = menu[Math.floor(Math.random() * menu.length)];
+        this.shirt = this.shirtColors[Math.floor(Math.random() * this.shirtColors.length)];
+        this.hair = this.hairColors[Math.floor(Math.random() * this.hairColors.length)];
+    }
+
+    render() {
+        document.getElementById('svg-body').setAttribute('fill', this.shirt);
+        document.getElementById('svg-hair').setAttribute('fill', this.hair);
+        document.getElementById('customer-bubble').innerText = `Merhaba! Bir ${this.order} alabilir miyim?`;
+        document.getElementById('customer-container').classList.add('active');
+    }
+
+    leave() {
+        document.getElementById('customer-container').classList.remove('active');
+        setTimeout(() => { activeCustomer = null; }, 600);
+    }
+}
+
+function clearCustomer() {
+    if(activeCustomer) { activeCustomer.leave(); }
+    document.getElementById('customer-container').classList.remove('active');
+    activeCustomer = null;
+    resetRecipe();
+}
+
+function startShift() {
+    if (game.active) return;
+    game.active = true;
+    game.income = 0;
+    game.hour = 8;
+    document.getElementById('btn-start').disabled = true;
+
+    shiftInterval = setInterval(() => {
+        game.hour++;
+        if (!activeCustomer && Math.random() > 0.25) {
+            activeCustomer = new CartoonCustomer();
+            activeCustomer.render();
+        }
+        if (game.hour >= 18) {
+            clearInterval(shiftInterval);
+            endShift();
+        }
+    }, 3000);
+}
+
+// BARDAK KAPASİTE KONTROLÜ (MAKS 3 MALZEME)
+function addIngredient(item) {
+    if (!game.active) return;
+
+    if (currentRecipe.length >= 3) {
+        document.getElementById('recipe-list').innerText = "⚠️ Bardak Doldu!";
+        return;
+    }
+
+    currentRecipe.push(item);
+    document.getElementById('recipe-list').innerText = currentRecipe.join(" + ");
+
+    let fillPercent = Math.min(100, currentRecipe.length * 33.3);
+    let liquid = document.getElementById('cup-liquid');
+    liquid.style.height = fillPercent + '%';
+    liquid.style.backgroundColor = currentRecipe.includes('Süt') ? '#d3a373' : '#5c3818';
+}
+
+function resetRecipe() {
+    currentRecipe = [];
+    document.getElementById('recipe-list').innerText = "Boş";
+    document.getElementById('cup-liquid').style.height = '0%';
+}
+
+function serveCoffee() {
+    if (!activeCustomer) return;
+
+    let target = RECIPES[activeCustomer.order];
+    let isCorrect = JSON.stringify([...currentRecipe].sort()) === JSON.stringify([...target].sort());
+
+    if (isCorrect) {
+        let gain = target.length * 20 + 10;
+        game.money += gain;
+        game.income += gain;
+        document.getElementById('customer-bubble').innerText = "Nefis olmuş, ellerine sağlık! 🥰";
+    } else {
+        game.reputation = Math.max(0, game.reputation - 10);
+        document.getElementById('customer-bubble').innerText = "Bu benim siparişim değil ki... 😞";
+    }
+
+    setTimeout(() => {
+        if (activeCustomer) activeCustomer.leave();
+        resetRecipe();
+    }, 1200);
+}
+
+function endShift() {
+    game.active = false;
+    clearCustomer();
+    let profit = game.income - 30;
+    game.money += profit;
+
+    document.getElementById('sum-income').innerText = game.income;
+    document.getElementById('sum-rent').innerText = 30;
+    document.getElementById('sum-profit').innerText = profit;
+    document.getElementById('summary-modal').classList.remove('hidden');
+}
+
+function closeSummary() {
+    game.day++;
+    document.getElementById('summary-modal').classList.add('hidden');
+    document.getElementById('btn-start').disabled = false;
+    updateUI();
+}
+
+function buyUpgrade(type) {
+    if (type === 'espresso' && !game.hasEspresso) {
+        if(game.money >= 200) {
+            game.money -= 200;
+            game.hasEspresso = true;
+            const btn = document.getElementById('btn-buy-espresso');
+            btn.innerText = "Alındı ✅";
+            btn.disabled = true;
+            alert("Espresso Makinesi Alındı! Latte ve Karamel Macchiato Menüde Açıldı.");
+            updateUI();
+        } else {
+            alert("Yetersiz Bakiye!");
+        }
+    }
+}
+
+function updateUI() {
+    document.getElementById('ui-day').innerText = game.day;
+    document.getElementById('ui-money').innerText = game.money;
+    document.getElementById('ui-rep').innerText = Math.round(game.reputation);
+    document.getElementById('ui-time').innerText = `${game.hour < 10 ? '0'+game.hour : game.hour}:00`;
+}
+</script>
+</body>
+</html>
